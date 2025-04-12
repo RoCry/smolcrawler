@@ -1,8 +1,10 @@
-from typing import AsyncGenerator, Set, Literal
-from urllib.parse import urljoin, urlparse
-from loguru import logger
-from localwebpy import HttpVisitor, Webpage, BrowserVisitor
 import re
+from typing import AsyncGenerator, Literal, Set
+from urllib.parse import urljoin, urlparse
+
+from localwebpy import BrowserVisitor, HttpVisitor, Webpage
+from loguru import logger
+
 
 class Crawler:
     def __init__(
@@ -35,24 +37,24 @@ class Crawler:
             # Default: use the initial URL as prefix
             parsed = urlparse(url)
             self.url_prefix = f"{parsed.scheme}://{parsed.netloc}"
-        
+
         self.visited_urls.clear()
         queue = [(url, 0)]
-        
+
         while queue:
             current_url, current_depth = queue.pop(0)
-            
+
             if current_url in self.visited_urls or current_depth > self.depth:
                 continue
-                
+
             self.visited_urls.add(current_url)
-            
+
             try:
                 webpages = await self.visitor.visit_many([current_url])
                 if webpages:
                     webpage = webpages[0]
                     yield webpage
-                    
+
                     if current_depth < self.depth:
                         new_urls = self._extract_urls(webpage.html, current_url)
                         queue.extend((url, current_depth + 1) for url in new_urls)
@@ -62,32 +64,33 @@ class Crawler:
     def _extract_urls(self, html: str, base_url: str) -> Set[str]:
         urls = set()
         url_pattern = re.compile(r'href=["\'](.*?)["\']')
-        
+
         for match in url_pattern.finditer(html):
             url = match.group(1)
             absolute_url = urljoin(base_url, url)
-            
+
             if self._is_valid_url(absolute_url):
                 urls.add(absolute_url)
-                
+
         return urls
 
     def _is_valid_url(self, url: str) -> bool:
         try:
             parsed = urlparse(url)
-            
+
             # Basic URL validation
-            if parsed.scheme not in ('http', 'https'):
+            if parsed.scheme not in ("http", "https"):
                 return False
-                
+
             # Check prefix if specified
             if self.url_prefix and not url.startswith(self.url_prefix):
                 return False
-                
+
             # Check regex if specified
             if self.filter_regex and not self.filter_regex.search(url):
                 return False
-                
+
             return True
-        except:
-            return False 
+        except Exception as e:
+            logger.error(f"Error validating URL {url}: {e}")
+            return False
