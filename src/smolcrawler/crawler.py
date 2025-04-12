@@ -16,18 +16,20 @@ class Crawler:
         url_prefix: str | None = None,
         filter_regex: str | None = None,
         visitor: Literal["browser", "headless", "http"] = "http",
+        limit: int = -1,
     ):
         self.depth = depth
         self.concurrency = concurrency
         self.timeout = timeout
         self.url_prefix = url_prefix
         self.filter_regex = re.compile(filter_regex) if filter_regex else None
+        self.limit = limit
         self._setup_visitor(visitor)
         self.visited_urls: Set[str] = set()
         self.base_url = ""
 
         logger.info(
-            f"Initialized crawler with depth={depth}, concurrency={concurrency}, visitor={visitor}"
+            f"Initialized crawler with depth={depth}, concurrency={concurrency}, visitor={visitor}, limit={limit}"
         )
         if url_prefix:
             logger.info(f"URL prefix filter: {url_prefix}")
@@ -88,7 +90,7 @@ class Crawler:
         queue = [(url, 0)]
         total_pages = 0
 
-        while queue:
+        while queue and (self.limit == -1 or total_pages < self.limit):
             current_url, current_depth = queue.pop(0)
 
             if self._should_skip_url(current_url, current_depth):
