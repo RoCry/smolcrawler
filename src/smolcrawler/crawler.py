@@ -1,9 +1,10 @@
 import re
 from typing import AsyncGenerator, Literal, Set
-from urllib.parse import urljoin, urlparse
 
 from localwebpy import BrowserVisitor, HttpVisitor, Webpage
 from loguru import logger
+
+from .utils import extract_urls, get_default_url_prefix, is_valid_url
 
 
 class Crawler:
@@ -31,23 +32,42 @@ class Crawler:
         self.visited_urls: Set[str] = set()
         self.base_url = ""
 
+        logger.info(
+            f"Initialized crawler with depth={depth}, concurrency={concurrency}, visitor={visitor}"
+        )
+        if url_prefix:
+            logger.info(f"URL prefix filter: {url_prefix}")
+        if filter_regex:
+            logger.info(f"URL regex filter: {filter_regex}")
+
     async def run(self, url: str) -> AsyncGenerator[Webpage, None]:
         self.base_url = url
         if self.url_prefix is None:
-            # Default: use the initial URL as prefix
-            parsed = urlparse(url)
-            self.url_prefix = f"{parsed.scheme}://{parsed.netloc}"
+            self.url_prefix = get_default_url_prefix(url)
+            logger.info(f"Using default URL prefix: {self.url_prefix}")
 
         self.visited_urls.clear()
         queue = [(url, 0)]
+        total_pages = 0
 
         while queue:
             current_url, current_depth = queue.pop(0)
 
-            if current_url in self.visited_urls or current_depth > self.depth:
+            if current_url in self.visited_urls:
+                logger.debug(f"Skipping already visited URL: {current_url}")
+                continue
+
+            if current_depth > self.depth:
+                logger.debug(
+                    f"Skipping URL at depth {current_depth} > {self.depth}: {current_url}"
+                )
                 continue
 
             self.visited_urls.add(current_url)
+            total_pages += 1
+            logger.info(
+                f"Crawling [{total_pages}] {current_url} (depth: {current_depth})"
+            )
 
             try:
                 webpages = await self.visitor.visit_many([current_url])
@@ -56,41 +76,17 @@ class Crawler:
                     yield webpage
 
                     if current_depth < self.depth:
-                        new_urls = self._extract_urls(webpage.html, current_url)
-                        queue.extend((url, current_depth + 1) for url in new_urls)
+                        new_urls = extract_urls(webpage.html, current_url)
+                        valid_urls = {
+                            url
+                            for url in new_urls
+                            if is_valid_url(url, self.url_prefix, self.filter_regex)
+                        }
+                        queue.extend((url, current_depth + 1) for url in valid_urls)
+                        logger.debug(
+                            f"Found {len(valid_urls)} valid URLs to crawl from {current_url}"
+                        )
             except Exception as e:
                 logger.error(f"Error crawling {current_url}: {e}")
 
-    def _extract_urls(self, html: str, base_url: str) -> Set[str]:
-        urls = set()
-        url_pattern = re.compile(r'href=["\'](.*?)["\']')
-
-        for match in url_pattern.finditer(html):
-            url = match.group(1)
-            absolute_url = urljoin(base_url, url)
-
-            if self._is_valid_url(absolute_url):
-                urls.add(absolute_url)
-
-        return urls
-
-    def _is_valid_url(self, url: str) -> bool:
-        try:
-            parsed = urlparse(url)
-
-            # Basic URL validation
-            if parsed.scheme not in ("http", "https"):
-                return False
-
-            # Check prefix if specified
-            if self.url_prefix and not url.startswith(self.url_prefix):
-                return False
-
-            # Check regex if specified
-            if self.filter_regex and not self.filter_regex.search(url):
-                return False
-
-            return True
-        except Exception as e:
-            logger.error(f"Error validating URL {url}: {e}")
-            return False
+        logger.info(f"Crawling completed. Total pages visited: {total_pages}")
