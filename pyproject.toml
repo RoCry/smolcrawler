@@ -18,8 +18,8 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv.sources]
-localwebpy = { git = "https://github.com/RoCry/localwebpy" }
-
 [tool.ruff.lint]
 extend-select = ["I"]
+
+[tool.uv.sources]
+localwebpy = { path = "../localwebpy" }
