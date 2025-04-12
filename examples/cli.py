@@ -7,8 +7,8 @@ from smolcrawler import Crawler
 
 async def main(
     url: str,
-    depth: int = 2,
-    concurrency: int = 3,
+    depth: int = 1,
+    concurrency: int = 1,
     timeout: int = 60,
     url_prefix: str = None,
     filter_regex: str = None,
