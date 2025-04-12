@@ -7,10 +7,15 @@ from loguru import logger
 
 def extract_urls(html: str, base_url: str) -> Set[str]:
     urls = set()
-    url_pattern = re.compile(r'href=["\'](.*?)["\']')
+    # Match href attributes in anchor tags, ignoring case
+    url_pattern = re.compile(r'<a[^>]+href=["\'](.*?)["\']', re.IGNORECASE)
 
     for match in url_pattern.finditer(html):
         url = match.group(1)
+        # Skip empty URLs, anchors, and javascript
+        if not url or url.startswith(("#", "javascript:", "mailto:", "tel:")):
+            continue
+
         absolute_url = urljoin(base_url, url)
         urls.add(absolute_url)
 
@@ -28,6 +33,15 @@ def is_valid_url(
         # Basic URL validation
         if parsed.scheme not in ("http", "https"):
             return False
+
+        # Get the path without query parameters
+        path = parsed.path.split("?")[0]
+
+        # Allow URLs with no extension or HTML-like extensions
+        if path and "." in path:
+            ext = path.split(".")[-1].lower()
+            if ext not in ["", "html", "htm", "php", "asp", "aspx", "jsp"]:
+                return False
 
         # Check prefix if specified
         if url_prefix and not url.startswith(url_prefix):
