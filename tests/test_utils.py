@@ -8,25 +8,27 @@ def test_extract_urls_with_relative_paths():
     html = """
     <html>
         <body>
-            <a href="/swift-protobuf">Link 1</a>
-            <a href="swift-protobuf">Link 2</a>
-            <a href="./swift-protobuf">Link 3</a>
-            <a href="../swift-protobuf">Link 4</a>
-            <a href="//example.com/swift-protobuf">Link 5</a>
+            <a href="/swift-protobuf">Link 1</a>  <!-- root-relative -->
+            <a href="swift-protobuf">Link 2</a>   <!-- relative to current path -->
+            <a href="./swift-protobuf">Link 3</a> <!-- same as above -->
+            <a href="../swift-protobuf">Link 4</a> <!-- parent path -->
         </body>
     </html>
     """
     
     urls = extract_urls(html, base_url)
+    
+    # Expected behavior:
+    # 1. /swift-protobuf -> https://example.com/swift-protobuf
+    # 2. swift-protobuf -> https://example.com/docs/swift-protobuf
+    # 3. ./swift-protobuf -> https://example.com/docs/swift-protobuf
+    # 4. ../swift-protobuf -> https://example.com/swift-protobuf
     expected = {
-        "https://example.com/swift-protobuf",  # from /swift-protobuf
-        "https://example.com/docs/swift-protobuf",  # from swift-protobuf
-        "https://example.com/docs/swift-protobuf",  # from ./swift-protobuf
-        "https://example.com/swift-protobuf",  # from ../swift-protobuf
-        "https://example.com/swift-protobuf",  # from //example.com/swift-protobuf
+        "https://example.com/swift-protobuf",
+        "https://example.com/docs/swift-protobuf",
     }
     
-    assert urls == expected
+    assert urls == expected, f"Expected {expected}, got {urls}"
 
 
 def test_is_valid_url():

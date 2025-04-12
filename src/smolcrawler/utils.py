@@ -7,29 +7,38 @@ from loguru import logger
 
 def extract_urls(html: str, base_url: str) -> Set[str]:
     urls = set()
-    # Match href attributes in anchor tags, ignoring case
     url_pattern = re.compile(r'<a[^>]+href=["\'](.*?)["\']', re.IGNORECASE)
     
-    # Parse base URL to handle relative paths correctly
+    # Parse base URL
     base_parsed = urlparse(base_url)
     base_path = base_parsed.path.rstrip('/')
     
     for match in url_pattern.finditer(html):
         url = match.group(1)
-        # Skip empty URLs, anchors, and javascript
+        
+        # Skip invalid URLs
         if not url or url.startswith(("#", "javascript:", "mailto:", "tel:")):
             continue
             
-        # Handle protocol-relative URLs (//example.com/path)
-        if url.startswith('//'):
-            url = f"{base_parsed.scheme}:{url}"
-            
-        # Handle root-relative URLs (/path)
+        # Handle different URL types
         if url.startswith('/'):
+            # Root-relative URL
             absolute_url = f"{base_parsed.scheme}://{base_parsed.netloc}{url}"
+        elif url.startswith('../'):
+            # Parent directory
+            parent_count = url.count('../')
+            url = url[3 * parent_count:]  # Remove ../ prefixes
+            path_parts = base_path.split('/')
+            if len(path_parts) > parent_count:
+                parent_path = '/'.join(path_parts[:-parent_count])
+            else:
+                parent_path = ''
+            absolute_url = f"{base_parsed.scheme}://{base_parsed.netloc}/{parent_path}/{url}".replace('//', '/')
         else:
-            # Handle relative paths (path, ./path, ../path)
-            absolute_url = urljoin(base_url, url)
+            # Current directory or relative path
+            if url.startswith('./'):
+                url = url[2:]  # Remove ./ prefix
+            absolute_url = f"{base_parsed.scheme}://{base_parsed.netloc}/{base_path}/{url}".replace('//', '/')
             
         urls.add(absolute_url)
         
