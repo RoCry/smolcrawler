@@ -1,8 +1,7 @@
-from typing import AsyncGenerator, Set
+from typing import AsyncGenerator, Set, Literal
 from urllib.parse import urljoin, urlparse
-import asyncio
 from loguru import logger
-from localwebpy import HttpVisitor, Webpage
+from localwebpy import HttpVisitor, Webpage, BrowserVisitor
 import re
 
 class Crawler:
@@ -11,18 +10,32 @@ class Crawler:
         depth: int = 2,
         concurrency: int = 3,
         timeout: int = 60,
-        use_browser: bool = False,
-        headless: bool = True,
+        url_prefix: str | None = None,
+        filter_regex: str | None = None,
+        visitor: Literal["browser", "headless", "http"] = "http",
     ):
         self.depth = depth
         self.concurrency = concurrency
         self.timeout = timeout
-        self.visitor = HttpVisitor(concurrency=concurrency)
+        self.url_prefix = url_prefix
+        self.filter_regex = re.compile(filter_regex) if filter_regex else None
+        match visitor:
+            case "browser":
+                self.visitor = BrowserVisitor(concurrency=concurrency, headless=False)
+            case "headless":
+                self.visitor = BrowserVisitor(concurrency=concurrency, headless=True)
+            case "http":
+                self.visitor = HttpVisitor(concurrency=concurrency)
         self.visited_urls: Set[str] = set()
         self.base_url = ""
 
     async def run(self, url: str) -> AsyncGenerator[Webpage, None]:
         self.base_url = url
+        if self.url_prefix is None:
+            # Default: use the initial URL as prefix
+            parsed = urlparse(url)
+            self.url_prefix = f"{parsed.scheme}://{parsed.netloc}"
+        
         self.visited_urls.clear()
         queue = [(url, 0)]
         
@@ -62,10 +75,19 @@ class Crawler:
     def _is_valid_url(self, url: str) -> bool:
         try:
             parsed = urlparse(url)
-            base_parsed = urlparse(self.base_url)
-            return (
-                parsed.scheme in ('http', 'https') and
-                parsed.netloc == base_parsed.netloc
-            )
+            
+            # Basic URL validation
+            if parsed.scheme not in ('http', 'https'):
+                return False
+                
+            # Check prefix if specified
+            if self.url_prefix and not url.startswith(self.url_prefix):
+                return False
+                
+            # Check regex if specified
+            if self.filter_regex and not self.filter_regex.search(url):
+                return False
+                
+            return True
         except:
             return False 

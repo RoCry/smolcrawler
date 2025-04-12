@@ -7,10 +7,20 @@ async def main(
     depth: int = 2,
     concurrency: int = 3,
     timeout: int = 60,
+    url_prefix: str = None,
+    filter_regex: str = None,
+    visitor: str = "http",
     truncate: int = -1,
     skip_url: bool = False
 ):
-    crawler = Crawler(depth=depth, concurrency=concurrency, timeout=timeout)
+    crawler = Crawler(
+        depth=depth, 
+        concurrency=concurrency, 
+        timeout=timeout,
+        url_prefix=url_prefix,
+        filter_regex=filter_regex,
+        visitor=visitor
+    )
     async for webpage in crawler.run(url):
         print(webpage.to_md(truncate_num=truncate, skip_url=skip_url))
         print("\n" + "="*80 + "\n")  # Add separator between pages
