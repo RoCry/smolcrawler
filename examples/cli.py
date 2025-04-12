@@ -1,0 +1,19 @@
+import asyncio
+import fire
+from smolcrawler import Crawler
+
+async def main(
+    url: str,
+    depth: int = 2,
+    concurrency: int = 3,
+    timeout: int = 60,
+    truncate: int = -1,
+    skip_url: bool = False
+):
+    crawler = Crawler(depth=depth, concurrency=concurrency, timeout=timeout)
+    async for webpage in crawler.run(url):
+        print(webpage.to_md(truncate_num=truncate, skip_url=skip_url))
+        print("\n" + "="*80 + "\n")  # Add separator between pages
+
+if __name__ == "__main__":
+    fire.Fire(main) 
