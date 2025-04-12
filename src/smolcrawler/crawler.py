@@ -4,6 +4,7 @@ from typing import AsyncGenerator, List, Literal, Set, Tuple
 from localwebpy import BrowserVisitor, HttpVisitor, Webpage
 from loguru import logger
 
+from .content_detector import ContentDetector, HashBasedDetector
 from .utils import extract_urls, get_default_url_prefix, is_valid_url
 
 
@@ -17,6 +18,7 @@ class Crawler:
         filter_regex: str | None = None,
         visitor: Literal["browser", "headless", "http"] = "http",
         limit: int = -1,
+        content_detector: ContentDetector | None = None,
     ):
         self.depth = depth
         self.concurrency = concurrency
@@ -26,6 +28,7 @@ class Crawler:
         self.limit = limit
         self._setup_visitor(visitor)
         self.visited_urls: Set[str] = set()
+        self.content_detector = content_detector or HashBasedDetector()
         self.base_url = ""
 
         logger.info(
@@ -87,8 +90,10 @@ class Crawler:
             logger.info(f"Using default URL prefix: {self.url_prefix}")
 
         self.visited_urls.clear()
+        self.content_detector.clear()
         queue = [(url, 0)]
         total_pages = 0
+        skipped_pages = 0
 
         while queue and (self.limit == -1 or total_pages < self.limit):
             current_url, current_depth = queue.pop(0)
@@ -104,10 +109,22 @@ class Crawler:
 
             webpage = await self._crawl_page(current_url)
             if webpage:
+                content = webpage.content
+                if not content:
+                    logger.warning(f"No content found for {current_url}")
+                    skipped_pages += 1
+                    continue
+                if self.content_detector.is_duplicate(content):
+                    skipped_pages += 1
+                    continue
+                self.content_detector.add_content(content)
+
                 yield webpage
 
                 if current_depth < self.depth:
                     next_urls = self._get_next_urls(webpage, current_url, current_depth)
                     queue.extend(next_urls)
 
-        logger.info(f"Crawling completed. Total pages visited: {total_pages}")
+        logger.info(
+            f"Crawling completed. Total pages: {total_pages}, Skipped: {skipped_pages}"
+        )
