@@ -82,34 +82,45 @@ class Crawler:
         skipped_pages = 0
 
         while queue and (self.limit == -1 or total_pages - skipped_pages < self.limit):
-            current_url, current_depth = queue.pop(0)
+            # Process URLs in batches up to concurrency limit
+            batch_size = min(self.concurrency, len(queue))
+            current_batch = [queue.pop(0) for _ in range(batch_size)]
+            
+            # Filter out URLs that should be skipped
+            urls_to_crawl = []
+            for current_url, current_depth in current_batch:
+                if not self._should_skip_url(current_url, current_depth):
+                    urls_to_crawl.append((current_url, current_depth))
+                    self.visited_urls.add(current_url)
+                    total_pages += 1
+                    logger.info(
+                        f"Queuing [{total_pages}] {current_url} (depth: {current_depth})"
+                    )
 
-            if self._should_skip_url(current_url, current_depth):
+            if not urls_to_crawl:
                 continue
 
-            self.visited_urls.add(current_url)
-            total_pages += 1
-            logger.info(
-                f"Crawling [{total_pages}] {current_url} (depth: {current_depth})"
-            )
+            # Batch visit URLs
+            webpages = await self.visitor.visit_many([url for url, _ in urls_to_crawl])
 
-            webpage = await self._crawl_page(current_url)
-            if webpage:
-                content = webpage.content
-                if not content:
-                    logger.warning(f"No content found for {current_url}")
-                    skipped_pages += 1
-                    continue
-                if self.content_detector.is_duplicate(content):
-                    skipped_pages += 1
-                    continue
-                self.content_detector.add_content(content)
+            # Process results
+            for webpage, (current_url, current_depth) in zip(webpages, urls_to_crawl):
+                if webpage:
+                    content = webpage.content
+                    if not content:
+                        logger.warning(f"No content found for {current_url}")
+                        skipped_pages += 1
+                        continue
+                    if self.content_detector.is_duplicate(content):
+                        skipped_pages += 1
+                        continue
+                    self.content_detector.add_content(content)
 
-                yield webpage
+                    yield webpage
 
-                if current_depth < self.depth:
-                    next_urls = self._get_next_urls(webpage, current_url, current_depth)
-                    queue.extend(next_urls)
+                    if current_depth < self.depth:
+                        next_urls = self._get_next_urls(webpage, current_url, current_depth)
+                        queue.extend(next_urls)
 
         logger.info(
             f"Crawling completed. Total pages: {total_pages}, Skipped: {skipped_pages}"
