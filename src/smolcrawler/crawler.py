@@ -95,7 +95,7 @@ class Crawler:
         total_pages = 0
         skipped_pages = 0
 
-        while queue and (self.limit == -1 or total_pages < self.limit):
+        while queue and (self.limit == -1 or total_pages - skipped_pages < self.limit):
             current_url, current_depth = queue.pop(0)
 
             if self._should_skip_url(current_url, current_depth):
