@@ -1,7 +1,7 @@
 import re
-from typing import AsyncGenerator, List, Literal, Set, Tuple
+from typing import AsyncGenerator, List, Set, Tuple
 
-from localwebpy import BrowserVisitor, HttpVisitor, Webpage
+from localwebpy import SmartVisitor, Webpage
 from loguru import logger
 
 from .content_detector import ContentDetector, HashBasedDetector
@@ -16,7 +16,6 @@ class Crawler:
         timeout: int = 60,
         url_prefix: str | None = None,
         filter_regex: str | None = None,
-        visitor: Literal["browser", "headless", "http"] = "http",
         limit: int = -1,
         content_detector: ContentDetector | None = None,
     ):
@@ -26,31 +25,18 @@ class Crawler:
         self.url_prefix = url_prefix
         self.filter_regex = re.compile(filter_regex) if filter_regex else None
         self.limit = limit
-        self._setup_visitor(visitor)
+        self.visitor = SmartVisitor(concurrency=concurrency, timeout=timeout)
         self.visited_urls: Set[str] = set()
         self.content_detector = content_detector or HashBasedDetector()
         self.base_url = ""
 
         logger.info(
-            f"Initialized crawler with depth={depth}, concurrency={concurrency}, visitor={visitor}, limit={limit}"
+            f"Initialized crawler with depth={depth}, concurrency={concurrency}, limit={limit}"
         )
         if url_prefix:
             logger.info(f"URL prefix filter: {url_prefix}")
         if filter_regex:
             logger.info(f"URL regex filter: {filter_regex}")
-
-    def _setup_visitor(self, visitor: Literal["browser", "headless", "http"]) -> None:
-        match visitor:
-            case "browser":
-                self.visitor = BrowserVisitor(
-                    concurrency=self.concurrency, headless=False
-                )
-            case "headless":
-                self.visitor = BrowserVisitor(
-                    concurrency=self.concurrency, headless=True
-                )
-            case "http":
-                self.visitor = HttpVisitor(concurrency=self.concurrency)
 
     def _should_skip_url(self, url: str, depth: int) -> bool:
         if url in self.visited_urls:

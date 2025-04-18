@@ -1,4 +1,3 @@
-from typing import Literal
 
 import fire
 
@@ -12,7 +11,6 @@ async def main(
     timeout: int = 15,
     url_prefix: str = None,
     filter_regex: str = None,
-    visitor: Literal["browser", "headless", "http"] = "http",
     truncate: int = 200,
     skip_url: bool = False,
     limit: int = -1,
@@ -23,7 +21,6 @@ async def main(
         timeout=timeout,
         url_prefix=url_prefix,
         filter_regex=filter_regex,
-        visitor=visitor,
         limit=limit,
     )
     async for webpage in crawler.run(url):

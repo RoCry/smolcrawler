@@ -1,4 +1,3 @@
-
 from smolcrawler.utils import extract_urls, is_valid_url
 
 
