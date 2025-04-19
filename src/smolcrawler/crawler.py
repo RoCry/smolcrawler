@@ -6,6 +6,7 @@ from loguru import logger
 
 from .content_detector import ContentDetector, HashBasedDetector
 from .utils import extract_urls, get_default_url_prefix, is_valid_url
+from .url_utils import normalize_url, get_url_variations, is_similar_url
 
 
 class Crawler:
@@ -29,6 +30,7 @@ class Crawler:
         self.limit = limit
         self.visitor = visitor or SmartVisitor(concurrency=concurrency, timeout=timeout)
         self.visited_urls: Set[str] = set()
+        self.visited_url_variations: Set[str] = set()  # Store normalized URLs
         self.content_detector = content_detector or HashBasedDetector()
         self.base_url = ""
 
@@ -41,8 +43,15 @@ class Crawler:
             logger.info(f"URL regex filter: {filter_regex}")
 
     def _should_skip_url(self, url: str, depth: int) -> bool:
+        # Check if we've visited this exact URL
         if url in self.visited_urls:
             logger.debug(f"Skipping already visited URL: {url}")
+            return True
+
+        # Check if we've visited a similar URL (normalized)
+        normalized_url = normalize_url(url)
+        if normalized_url in self.visited_url_variations:
+            logger.debug(f"Skipping similar URL: {url} (normalized: {normalized_url})")
             return True
 
         if depth > self.depth:
@@ -78,6 +87,7 @@ class Crawler:
             logger.info(f"Using default URL prefix: {self.url_prefix}")
 
         self.visited_urls.clear()
+        self.visited_url_variations.clear()
         self.content_detector.clear()
         queue = [(url, 0)]
         total_pages = 0
@@ -94,6 +104,8 @@ class Crawler:
                 if not self._should_skip_url(current_url, current_depth):
                     urls_to_crawl.append((current_url, current_depth))
                     self.visited_urls.add(current_url)
+                    # Add all variations of the URL to visited set
+                    self.visited_url_variations.update(get_url_variations(current_url))
                     total_pages += 1
                     logger.info(
                         f"Queuing [{total_pages}] {current_url} (depth: {current_depth})"
@@ -102,10 +114,8 @@ class Crawler:
             if not urls_to_crawl:
                 continue
 
-            # Batch visit URLs
             webpages = await self.visitor.visit_many([url for url, _ in urls_to_crawl])
 
-            # Process results
             for webpage, (current_url, current_depth) in zip(webpages, urls_to_crawl):
                 if webpage:
                     content = webpage.content
