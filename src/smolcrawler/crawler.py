@@ -16,7 +16,7 @@ class Crawler:
         timeout: int = 60,
         url_prefix: str | None = None,
         filter_regex: str | None = None,
-        limit: int = -1,
+        limit: int = 100,
         content_detector: ContentDetector | None = None,
         visitor: Visitor
         | None = None,  # if provided, will use this visitor instead of the default one
