@@ -5,8 +5,8 @@ from localwebpy import SmartVisitor, Visitor, Webpage
 from loguru import logger
 
 from .content_detector import ContentDetector, HashBasedDetector
+from .url_utils import normalize_url
 from .utils import extract_urls, get_default_url_prefix, is_valid_url
-from .url_utils import normalize_url, get_url_variations, is_similar_url
 
 
 class Crawler:
@@ -32,7 +32,6 @@ class Crawler:
         self.visited_urls: Set[str] = set()
         self.visited_url_variations: Set[str] = set()  # Store normalized URLs
         self.content_detector = content_detector or HashBasedDetector()
-        self.base_url = ""
 
         logger.info(
             f"Initialized crawler with depth={depth}, concurrency={concurrency}, limit={limit}"
@@ -81,14 +80,10 @@ class Crawler:
         return [(url, current_depth + 1) for url in valid_urls]
 
     async def run(self, url: str) -> AsyncGenerator[Webpage, None]:
-        self.base_url = url
         if self.url_prefix is None:
             self.url_prefix = get_default_url_prefix(url)
             logger.info(f"Using default URL prefix: {self.url_prefix}")
 
-        self.visited_urls.clear()
-        self.visited_url_variations.clear()
-        self.content_detector.clear()
         queue = [(url, 0)]
         total_pages = 0
         skipped_pages = 0
@@ -105,7 +100,7 @@ class Crawler:
                     urls_to_crawl.append((current_url, current_depth))
                     self.visited_urls.add(current_url)
                     # Add all variations of the URL to visited set
-                    self.visited_url_variations.update(get_url_variations(current_url))
+                    self.visited_url_variations.add(normalize_url(current_url))
                     total_pages += 1
                     logger.info(
                         f"Queuing [{total_pages}] {current_url} (depth: {current_depth})"
