@@ -44,3 +44,17 @@ def test_is_valid_url():
     # Test with prefix
     assert is_valid_url("https://example.com/page", url_prefix="https://example.com")
     assert not is_valid_url("https://other.com/page", url_prefix="https://example.com")
+
+def test_specific_url_in_html():
+    base_url = "https://mailarchive.ietf.org/arch/msg/oauth/XOEXkQVHDG6u_5ChUf6s4LxqA8M/"
+    html = """
+    <html>
+        <body>
+            <a href="https://official-name" rel="nofollow">https://official-name</a>
+        </body>
+    </html>
+    """
+
+    urls = extract_urls(html, base_url)
+    print(urls)
+    assert urls == {"https://official-name"}

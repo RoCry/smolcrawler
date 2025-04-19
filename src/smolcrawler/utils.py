@@ -20,6 +20,11 @@ def extract_urls(html: str, base_url: str) -> Set[str]:
         if not url or url.startswith(("#", "javascript:", "mailto:", "tel:")):
             continue
 
+        # Handle absolute URLs
+        if url.startswith(("http://", "https://")):
+            urls.add(url)
+            continue
+
         # Handle different URL types
         if url.startswith("/"):
             # Root-relative URL

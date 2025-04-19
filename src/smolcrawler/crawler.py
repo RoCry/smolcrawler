@@ -98,9 +98,6 @@ class Crawler:
             for current_url, current_depth in current_batch:
                 if not self._should_skip_url(current_url, current_depth):
                     urls_to_crawl.append((current_url, current_depth))
-                    self.visited_urls.add(current_url)
-                    # Add all variations of the URL to visited set
-                    self.visited_url_variations.add(normalize_url(current_url))
                     total_pages += 1
                     logger.info(
                         f"Queuing [{total_pages}] {current_url} (depth: {current_depth})"
@@ -121,14 +118,21 @@ class Crawler:
                     if self.content_detector.is_duplicate(content):
                         skipped_pages += 1
                         continue
+
+                    # Only mark URLs as visited after successful crawling
+                    self.visited_urls.add(current_url)
+                    self.visited_url_variations.add(normalize_url(current_url))
                     self.content_detector.add_content(content)
 
                     yield webpage
 
+                    # Only add next URLs if we haven't reached max depth
                     if current_depth < self.depth:
                         next_urls = self._get_next_urls(
                             webpage, current_url, current_depth
                         )
+                        # Filter out URLs that would exceed depth limit
+                        next_urls = [(url, depth) for url, depth in next_urls if depth <= self.depth]
                         queue.extend(next_urls)
 
         logger.info(
