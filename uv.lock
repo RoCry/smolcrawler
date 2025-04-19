@@ -347,7 +347,7 @@ wheels = [
 [[package]]
 name = "localwebpy"
 version = "0.1.0"
-source = { directory = "../localwebpy" }
+source = { git = "https://github.com/RoCry/localwebpy#fd4651befddaebc40236a1316940e442ce570fca" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "beautifulsoup4" },
@@ -359,28 +359,6 @@ dependencies = [
     { name = "readability-lxml" },
     { name = "trafilatura" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiosqlite", specifier = ">=0.21.0" },
-    { name = "beautifulsoup4", specifier = ">=4.13.3" },
-    { name = "cloudscraper", marker = "extra == 'cloudscraper'", specifier = ">=1.2.71" },
-    { name = "duckduckgo-search", marker = "extra == 'duckduckgo'", specifier = ">=7.4.4" },
-    { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.115.9" },
-    { name = "fire", marker = "extra == 'example'", specifier = ">=0.7.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "lxml", extras = ["html-clean"], specifier = ">=5.3.1" },
-    { name = "markdownify", specifier = ">=0.14.1" },
-    { name = "pdfminer-six", specifier = ">=20240706" },
-    { name = "playwright", specifier = ">=1.50.0" },
-    { name = "pydantic", marker = "extra == 'api'", specifier = ">=2.10.6" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.4" },
-    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.25.3" },
-    { name = "readability-lxml", specifier = ">=0.8.1" },
-    { name = "trafilatura", specifier = ">=2.0.0" },
-    { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.34.0" },
-]
-provides-extras = ["example", "duckduckgo", "test", "api", "cloudscraper"]
 
 [[package]]
 name = "loguru"
@@ -667,7 +645,7 @@ test = [
 requires-dist = [
     { name = "fire", specifier = ">=0.7.0" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "localwebpy", directory = "../localwebpy" },
+    { name = "localwebpy", git = "https://github.com/RoCry/localwebpy" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.5" },
     { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.26.0" },

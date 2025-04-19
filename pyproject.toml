@@ -28,4 +28,4 @@ build-backend = "hatchling.build"
 extend-select = ["I"]
 
 [tool.uv.sources]
-localwebpy = { path = "../localwebpy" }
+localwebpy = { git = "https://github.com/RoCry/localwebpy" }
