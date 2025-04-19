@@ -1,7 +1,7 @@
 import re
 from typing import AsyncGenerator, List, Set, Tuple
 
-from localwebpy import SmartVisitor, Webpage
+from localwebpy import SmartVisitor, Visitor, Webpage
 from loguru import logger
 
 from .content_detector import ContentDetector, HashBasedDetector
@@ -18,6 +18,8 @@ class Crawler:
         filter_regex: str | None = None,
         limit: int = -1,
         content_detector: ContentDetector | None = None,
+        visitor: Visitor
+        | None = None,  # if provided, will use this visitor instead of the default one
     ):
         self.depth = depth
         self.concurrency = concurrency
@@ -25,7 +27,7 @@ class Crawler:
         self.url_prefix = url_prefix
         self.filter_regex = re.compile(filter_regex) if filter_regex else None
         self.limit = limit
-        self.visitor = SmartVisitor(concurrency=concurrency, timeout=timeout)
+        self.visitor = visitor or SmartVisitor(concurrency=concurrency, timeout=timeout)
         self.visited_urls: Set[str] = set()
         self.content_detector = content_detector or HashBasedDetector()
         self.base_url = ""
@@ -85,7 +87,7 @@ class Crawler:
             # Process URLs in batches up to concurrency limit
             batch_size = min(self.concurrency, len(queue))
             current_batch = [queue.pop(0) for _ in range(batch_size)]
-            
+
             # Filter out URLs that should be skipped
             urls_to_crawl = []
             for current_url, current_depth in current_batch:
@@ -119,7 +121,9 @@ class Crawler:
                     yield webpage
 
                     if current_depth < self.depth:
-                        next_urls = self._get_next_urls(webpage, current_url, current_depth)
+                        next_urls = self._get_next_urls(
+                            webpage, current_url, current_depth
+                        )
                         queue.extend(next_urls)
 
         logger.info(
