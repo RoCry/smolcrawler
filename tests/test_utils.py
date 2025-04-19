@@ -1,4 +1,4 @@
-from smolcrawler.utils import extract_urls, is_valid_url
+from smolcrawler.utils import extract_urls, get_default_url_prefix, is_valid_url
 
 
 def test_extract_urls_with_relative_paths():
@@ -45,8 +45,11 @@ def test_is_valid_url():
     assert is_valid_url("https://example.com/page", url_prefix="https://example.com")
     assert not is_valid_url("https://other.com/page", url_prefix="https://example.com")
 
+
 def test_specific_url_in_html():
-    base_url = "https://mailarchive.ietf.org/arch/msg/oauth/XOEXkQVHDG6u_5ChUf6s4LxqA8M/"
+    base_url = (
+        "https://mailarchive.ietf.org/arch/msg/oauth/XOEXkQVHDG6u_5ChUf6s4LxqA8M/"
+    )
     html = """
     <html>
         <body>
@@ -58,3 +61,22 @@ def test_specific_url_in_html():
     urls = extract_urls(html, base_url)
     print(urls)
     assert urls == {"https://official-name"}
+
+
+def test_get_default_url_prefix():
+    # Test case 1: IETF mail archive URL
+    url1 = "https://mailarchive.ietf.org/arch/msg/oauth/I5dbO7j8KGbhgNhpJgTPAYdAg1w/"
+    assert get_default_url_prefix(url1) == "https://mailarchive.ietf.org"
+
+    # Test case 2: Greptime docs URL
+    url2 = "https://docs.greptime.com/enterprise/overview/"
+    assert get_default_url_prefix(url2) == "https://docs.greptime.com"
+
+    # Additional test cases for robustness
+    # Test case 3: URL with no path
+    url3 = "https://example.com"
+    assert get_default_url_prefix(url3) == "https://example.com"
+
+    # Test case 4: URL with query parameters
+    url4 = "https://example.com/path?query=value"
+    assert get_default_url_prefix(url4) == "https://example.com"

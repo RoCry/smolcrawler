@@ -15,7 +15,7 @@ class Crawler:
         depth: int = 2,
         concurrency: int = 3,
         timeout: int = 60,
-        url_prefix: str | None = None,
+        url_prefix: str | None = None,  # if provided, will use this prefix for all URLs
         filter_regex: str | None = None,
         limit: int = 100,
         content_detector: ContentDetector | None = None,
@@ -34,12 +34,8 @@ class Crawler:
         self.content_detector = content_detector or HashBasedDetector()
 
         logger.info(
-            f"Initialized crawler with depth={depth}, concurrency={concurrency}, limit={limit}"
+            f"Initialized crawler with depth={depth}, concurrency={concurrency}, url_prefix={url_prefix}, filter_regex={filter_regex}, limit={limit}"
         )
-        if url_prefix:
-            logger.info(f"URL prefix filter: {url_prefix}")
-        if filter_regex:
-            logger.info(f"URL regex filter: {filter_regex}")
 
     def _should_skip_url(self, url: str, depth: int) -> bool:
         # Check if we've visited this exact URL
@@ -132,7 +128,11 @@ class Crawler:
                             webpage, current_url, current_depth
                         )
                         # Filter out URLs that would exceed depth limit
-                        next_urls = [(url, depth) for url, depth in next_urls if depth <= self.depth]
+                        next_urls = [
+                            (url, depth)
+                            for url, depth in next_urls
+                            if depth <= self.depth
+                        ]
                         queue.extend(next_urls)
 
         logger.info(
