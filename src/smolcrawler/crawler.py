@@ -102,39 +102,48 @@ class Crawler:
             if not urls_to_crawl:
                 continue
 
-            webpages = await self.visitor.visit_many([url for url, _ in urls_to_crawl])
+            # Create a mapping of URLs to their depths
+            url_depth_map = {url: depth for url, depth in urls_to_crawl}
+            webpages: List[Webpage] = await self.visitor.visit_many([url for url, _ in urls_to_crawl])
 
-            for webpage, (current_url, current_depth) in zip(webpages, urls_to_crawl):
-                if webpage:
-                    content = webpage.content
-                    if not content:
-                        logger.warning(f"No content found for {current_url}")
-                        skipped_pages += 1
-                        continue
-                    if self.content_detector.is_duplicate(content):
-                        skipped_pages += 1
-                        continue
+            for webpage in webpages:
+                assert webpage is not None, "Received None webpage"
 
-                    # Only mark URLs as visited after successful crawling
-                    self.visited_urls.add(current_url)
-                    self.visited_url_variations.add(normalize_url(current_url))
-                    self.content_detector.add_content(content)
+                current_url = webpage.url
+                if current_url not in url_depth_map:
+                    logger.warning(f"Received webpage for unexpected URL: {current_url}")
+                    continue
+                    
+                current_depth = url_depth_map[current_url]
+                content = webpage.content
+                if not content:
+                    logger.warning(f"No content found for {current_url}")
+                    skipped_pages += 1
+                    continue
+                if self.content_detector.is_duplicate(content):
+                    logger.info(f"Skipping duplicate content for {current_url}")
+                    skipped_pages += 1
+                    continue
 
-                    yield webpage
+                # Only mark URLs as visited after successful crawling
+                self.visited_urls.add(current_url)
+                self.visited_url_variations.add(normalize_url(current_url))
+                self.content_detector.add_content(content)
 
-                    # Only add next URLs if we haven't reached max depth
-                    if current_depth < self.depth:
-                        next_urls = self._get_next_urls(
-                            webpage, current_url, current_depth
-                        )
-                        # Filter out URLs that would exceed depth limit
-                        next_urls = [
-                            (url, depth)
-                            for url, depth in next_urls
-                            if depth <= self.depth
-                        ]
-                        queue.extend(next_urls)
+                yield webpage
 
+                # Only add next URLs if we haven't reached max depth
+                if current_depth < self.depth:
+                    next_urls = self._get_next_urls(
+                        webpage, current_url, current_depth
+                    )
+                    # Filter out URLs that would exceed depth limit
+                    next_urls = [
+                        (url, depth)
+                        for url, depth in next_urls
+                        if depth <= self.depth
+                    ]
+                    queue.extend(next_urls)
         logger.info(
             f"Crawling completed. Total pages: {total_pages}, Skipped: {skipped_pages}"
         )
