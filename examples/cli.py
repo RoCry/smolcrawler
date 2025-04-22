@@ -23,8 +23,9 @@ async def main(
         limit=limit,
     )
     async for webpage in crawler.run(url):
-        print(webpage.to_md(truncate_num=truncate, skip_url=skip_url))
-        print("\n" + "=" * 80 + "\n")  # Add separator between pages
+        content_length = len(webpage.content) if webpage.content else 0
+        html_length = len(webpage.html) if webpage.html else 0
+        print(f"+++ {content_length}/{html_length} {webpage.title}: {webpage.url}")
 
 
 if __name__ == "__main__":
