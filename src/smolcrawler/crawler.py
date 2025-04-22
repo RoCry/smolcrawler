@@ -83,6 +83,7 @@ class Crawler:
         queue = [(url, 0)]
         total_pages = 0
         skipped_pages = 0
+        fetched_urls = []
 
         while queue and (self.limit == -1 or total_pages - skipped_pages < self.limit):
             # Process URLs in batches up to concurrency limit
@@ -108,6 +109,7 @@ class Crawler:
 
             for webpage in webpages:
                 assert webpage is not None, "Received None webpage"
+                fetched_urls.append(webpage.url)
 
                 current_url = webpage.url
                 if current_url not in url_depth_map:
@@ -144,6 +146,7 @@ class Crawler:
                         if depth <= self.depth
                     ]
                     queue.extend(next_urls)
+        fetched_urls_str = "\n".join([f"- {url}" for url in fetched_urls])
         logger.info(
-            f"Crawling completed. Total pages: {total_pages}, Skipped: {skipped_pages}"
+            f"Crawling completed. Total pages: {total_pages}, Skipped: {skipped_pages}\n{fetched_urls_str}"
         )
