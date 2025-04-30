@@ -29,8 +29,6 @@ class HashBasedDetector(ContentDetector):
     def is_duplicate(self, content: str) -> bool:
         content_hash = self._get_hash(content)
         is_dup = content_hash in self.content_hashes
-        if is_dup:
-            logger.debug("Found duplicate content")
         return is_dup
 
     def add_content(self, content: str) -> None:
