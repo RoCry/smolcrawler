@@ -65,7 +65,7 @@ class Crawler:
     def _get_next_urls(self, webpage: Webpage, current_url: str, current_depth: int) -> List[Tuple[str, int]]:
         new_urls = extract_urls(webpage.html, current_url)
         valid_urls = {url for url in new_urls if is_valid_url(url, self.url_prefix, self.filter_regex)}
-        logger.debug(f"Found {len(valid_urls)} valid URLs to crawl from {current_url}")
+        logger.debug(f"[Depth={current_depth}] Found {len(valid_urls)} valid URLs to crawl from {current_url}")
         return [(url, current_depth + 1) for url in valid_urls]
 
     async def run(self, url: str) -> AsyncGenerator[Webpage, None]:
