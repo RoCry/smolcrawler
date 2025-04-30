@@ -62,6 +62,7 @@ def is_valid_url(
 
         # Basic URL validation
         if parsed.scheme not in ("http", "https"):
+            logger.debug(f"Skipping URL with invalid scheme: {url}")
             return False
 
         # Get the path without query parameters
@@ -78,10 +79,12 @@ def is_valid_url(
 
         # Check prefix if specified
         if url_prefix and not url.startswith(url_prefix):
+            logger.debug(f"Skipping URL with prefix not matching: {url}, prefix: {url_prefix}")
             return False
 
         # Check regex if specified
         if filter_regex and not filter_regex.search(url):
+            logger.debug(f"Skipping URL with regex not matching: {url}, regex: {filter_regex}")
             return False
 
         return True
