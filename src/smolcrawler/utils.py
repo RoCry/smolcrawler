@@ -70,7 +70,10 @@ def is_valid_url(
         # Allow URLs with no extension or HTML-like extensions
         if path and "." in path:
             ext = path.split(".")[-1].lower()
-            if ext not in ["", "html", "htm", "php", "asp", "aspx", "jsp"]:
+            # not all a-z -> seem not a valid extension
+            # only skip if is an valid ext and not in whitelist
+            if ext.isalpha() and (ext not in ["", "html", "htm", "php", "asp", "aspx", "jsp", "md", "markdown", "txt"]):
+                logger.debug(f"Skipping URL with invalid extension: {url}, extension: {ext}")
                 return False
 
         # Check prefix if specified
