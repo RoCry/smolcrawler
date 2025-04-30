@@ -105,7 +105,9 @@ class Crawler:
 
             # Create a mapping of URLs to their depths
             url_depth_map = {url: depth for url, depth in urls_to_crawl}
-            webpages: List[Webpage] = await self.visitor.visit_many([url for url, _ in urls_to_crawl])
+            webpages: List[Webpage] = await self.visitor.visit_many(
+                [url for url, _ in urls_to_crawl]
+            )
 
             for webpage in webpages:
                 assert webpage is not None, "Received None webpage"
@@ -113,9 +115,11 @@ class Crawler:
 
                 current_url = webpage.url
                 if current_url not in url_depth_map:
-                    logger.warning(f"Received webpage for unexpected URL: {current_url}")
+                    logger.warning(
+                        f"Received webpage for unexpected URL: {current_url}"
+                    )
                     continue
-                    
+
                 current_depth = url_depth_map[current_url]
                 content = webpage.content
                 if not content:
@@ -136,14 +140,10 @@ class Crawler:
 
                 # Only add next URLs if we haven't reached max depth
                 if current_depth < self.depth:
-                    next_urls = self._get_next_urls(
-                        webpage, current_url, current_depth
-                    )
+                    next_urls = self._get_next_urls(webpage, current_url, current_depth)
                     # Filter out URLs that would exceed depth limit
                     next_urls = [
-                        (url, depth)
-                        for url, depth in next_urls
-                        if depth <= self.depth
+                        (url, depth) for url, depth in next_urls if depth <= self.depth
                     ]
                     queue.extend(next_urls)
         fetched_urls_str = "\n".join([f"- {url}" for url in fetched_urls])

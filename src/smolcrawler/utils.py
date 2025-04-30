@@ -93,4 +93,16 @@ def is_valid_url(
 
 def get_default_url_prefix(url: str) -> str:
     parsed = urlparse(url)
-    return f"{parsed.scheme}://{parsed.netloc}"
+    match parsed.netloc:
+        case "deepwiki.com":
+            # keep owner and repo name:
+            # /groue/GRDB.swift -> groue/GRDB.swift
+            # /groue/GRDB.swift/ -> groue/GRDB.swift
+            # /groue/GRDB.swift/docs -> groue/GRDB.swift
+            path_parts = parsed.path.split("/")
+            if len(path_parts) < 3:
+                return url
+            path = "/".join(path_parts[1:3])
+            return f"{parsed.scheme}://{parsed.netloc}/{path}"
+        case _:
+            return f"{parsed.scheme}://{parsed.netloc}"
