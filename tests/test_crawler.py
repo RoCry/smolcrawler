@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from localwebpy import Webpage
-
 from smolcrawler.crawler import Crawler
 
 

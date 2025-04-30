@@ -1,5 +1,4 @@
 import fire
-
 from smolcrawler import Crawler
 
 

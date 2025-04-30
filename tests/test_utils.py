@@ -47,9 +47,7 @@ def test_is_valid_url():
 
 
 def test_specific_url_in_html():
-    base_url = (
-        "https://mailarchive.ietf.org/arch/msg/oauth/XOEXkQVHDG6u_5ChUf6s4LxqA8M/"
-    )
+    base_url = "https://mailarchive.ietf.org/arch/msg/oauth/XOEXkQVHDG6u_5ChUf6s4LxqA8M/"
     html = """
     <html>
         <body>

@@ -38,16 +38,12 @@ def extract_urls(html: str, base_url: str) -> Set[str]:
                 parent_path = "/".join(path_parts[:-parent_count])
             else:
                 parent_path = ""
-            absolute_url = (
-                f"{base_parsed.scheme}://{base_parsed.netloc}/{parent_path}/{url}"
-            )
+            absolute_url = f"{base_parsed.scheme}://{base_parsed.netloc}/{parent_path}/{url}"
         else:
             # Current directory or relative path
             if url.startswith("./"):
                 url = url[2:]  # Remove ./ prefix
-            absolute_url = (
-                f"{base_parsed.scheme}://{base_parsed.netloc}/{base_path}/{url}"
-            )
+            absolute_url = f"{base_parsed.scheme}://{base_parsed.netloc}/{base_path}/{url}"
 
         # Clean up any double slashes in the path while preserving the scheme
         absolute_url = re.sub(r"(?<!:)//+", "/", absolute_url)

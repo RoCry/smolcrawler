@@ -19,8 +19,7 @@ class Crawler:
         filter_regex: str | None = None,
         limit: int = 100,
         content_detector: ContentDetector | None = None,
-        visitor: Visitor
-        | None = None,  # if provided, will use this visitor instead of the default one
+        visitor: Visitor | None = None,  # if provided, will use this visitor instead of the default one
     ):
         self.depth = depth
         self.concurrency = concurrency
@@ -63,15 +62,9 @@ class Crawler:
             logger.error(f"Error crawling {url}: {e}")
             return None
 
-    def _get_next_urls(
-        self, webpage: Webpage, current_url: str, current_depth: int
-    ) -> List[Tuple[str, int]]:
+    def _get_next_urls(self, webpage: Webpage, current_url: str, current_depth: int) -> List[Tuple[str, int]]:
         new_urls = extract_urls(webpage.html, current_url)
-        valid_urls = {
-            url
-            for url in new_urls
-            if is_valid_url(url, self.url_prefix, self.filter_regex)
-        }
+        valid_urls = {url for url in new_urls if is_valid_url(url, self.url_prefix, self.filter_regex)}
         logger.debug(f"Found {len(valid_urls)} valid URLs to crawl from {current_url}")
         return [(url, current_depth + 1) for url in valid_urls]
 
@@ -96,18 +89,14 @@ class Crawler:
                 if not self._should_skip_url(current_url, current_depth):
                     urls_to_crawl.append((current_url, current_depth))
                     total_pages += 1
-                    logger.info(
-                        f"Queuing [{total_pages}] {current_url} (depth: {current_depth})"
-                    )
+                    logger.info(f"Queuing [{total_pages}] {current_url} (depth: {current_depth})")
 
             if not urls_to_crawl:
                 continue
 
             # Create a mapping of URLs to their depths
             url_depth_map = {url: depth for url, depth in urls_to_crawl}
-            webpages: List[Webpage] = await self.visitor.visit_many(
-                [url for url, _ in urls_to_crawl]
-            )
+            webpages: List[Webpage] = await self.visitor.visit_many([url for url, _ in urls_to_crawl])
 
             for webpage in webpages:
                 assert webpage is not None, "Received None webpage"
@@ -115,9 +104,7 @@ class Crawler:
 
                 current_url = webpage.url
                 if current_url not in url_depth_map:
-                    logger.warning(
-                        f"Received webpage for unexpected URL: {current_url}"
-                    )
+                    logger.warning(f"Received webpage for unexpected URL: {current_url}")
                     continue
 
                 current_depth = url_depth_map[current_url]
@@ -142,11 +129,7 @@ class Crawler:
                 if current_depth < self.depth:
                     next_urls = self._get_next_urls(webpage, current_url, current_depth)
                     # Filter out URLs that would exceed depth limit
-                    next_urls = [
-                        (url, depth) for url, depth in next_urls if depth <= self.depth
-                    ]
+                    next_urls = [(url, depth) for url, depth in next_urls if depth <= self.depth]
                     queue.extend(next_urls)
         fetched_urls_str = "\n".join([f"- {url}" for url in fetched_urls])
-        logger.info(
-            f"Crawling completed. Total pages: {total_pages}, Skipped: {skipped_pages}\n{fetched_urls_str}"
-        )
+        logger.info(f"Crawling completed. Total pages: {total_pages}, Skipped: {skipped_pages}\n{fetched_urls_str}")
