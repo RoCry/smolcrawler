@@ -62,10 +62,14 @@ class Crawler:
             logger.error(f"Error crawling {url}: {e}")
             return None
 
-    def _get_next_urls(self, webpage: Webpage, prefix: str, current_url: str, current_depth: int) -> List[Tuple[str, int]]:
+    def _get_next_urls(
+        self, webpage: Webpage, prefix: str, current_url: str, current_depth: int
+    ) -> List[Tuple[str, int]]:
         new_urls = extract_urls(webpage.html, current_url)
         valid_urls = {url for url in new_urls if is_valid_url(url, prefix, self.filter_regex)}
-        logger.debug(f"[Depth={current_depth}] Found {len(valid_urls)}/{len(new_urls)} valid URLs to crawl from {current_url}")
+        logger.debug(
+            f"[Depth={current_depth}] Found {len(valid_urls)}/{len(new_urls)} valid URLs to crawl from {current_url}"
+        )
         return [(url, current_depth + 1) for url in valid_urls]
 
     async def run(self, url: str) -> AsyncGenerator[Webpage, None]:
@@ -73,6 +77,7 @@ class Crawler:
         logger.info(f"Run crawler prefix={prefix} url={url}")
 
         queue = [(url, 0)]
+        queue_urls_seen = set()
         total_pages = 0
         skipped_pages = 0
         fetched_urls = []
@@ -85,7 +90,10 @@ class Crawler:
             # Filter out URLs that should be skipped
             urls_to_crawl = []
             for current_url, current_depth in current_batch:
+                if current_url in queue_urls_seen:
+                    continue
                 if not self._should_skip_url(current_url, current_depth):
+                    queue_urls_seen.add(current_url)
                     urls_to_crawl.append((current_url, current_depth))
                     total_pages += 1
                     logger.info(f"Queuing [{total_pages}] {current_url} (depth: {current_depth})")
@@ -126,7 +134,9 @@ class Crawler:
 
                 # Only add next URLs if we haven't reached max depth
                 if current_depth < self.depth:
-                    next_urls = self._get_next_urls(webpage, prefix=prefix, current_url=current_url, current_depth=current_depth)
+                    next_urls = self._get_next_urls(
+                        webpage, prefix=prefix, current_url=current_url, current_depth=current_depth
+                    )
                     # Filter out URLs that would exceed depth limit
                     next_urls = [(url, depth) for url, depth in next_urls if depth <= self.depth]
                     queue.extend(next_urls)

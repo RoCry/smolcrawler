@@ -1,8 +1,6 @@
 import hashlib
 from typing import Protocol, runtime_checkable
 
-from loguru import logger
-
 
 @runtime_checkable
 class ContentDetector(Protocol):
