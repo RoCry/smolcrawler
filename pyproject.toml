@@ -25,4 +25,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-localwebpy = { git = "https://github.com/RoCry/localwebpy" }
+localwebpy = { git = "ssh://git@github.com/RoCry/localwebpy.git" }
