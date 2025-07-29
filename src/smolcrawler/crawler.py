@@ -81,6 +81,7 @@ class Crawler:
         total_pages = 0
         skipped_pages = 0
         fetched_urls = []
+        fetched_pages_info = []  # Store tuples of (url, content_size)
 
         while queue and (self.limit == -1 or total_pages - skipped_pages < self.limit):
             # Process URLs in batches up to concurrency limit
@@ -130,6 +131,10 @@ class Crawler:
                 self.visited_url_variations.add(normalize_url(current_url))
                 self.content_detector.add_content(content)
 
+                # Track content size
+                content_size = len(content) if content else 0
+                fetched_pages_info.append((current_url, content_size))
+
                 yield webpage
 
                 # Only add next URLs if we haven't reached max depth
@@ -140,5 +145,15 @@ class Crawler:
                     # Filter out URLs that would exceed depth limit
                     next_urls = [(url, depth) for url, depth in next_urls if depth <= self.depth]
                     queue.extend(next_urls)
-        fetched_urls_str = "\n".join([f"- {url}" for url in fetched_urls])
-        logger.info(f"Crawling completed. Total pages: {total_pages}, Skipped: {skipped_pages}\n{fetched_urls_str}")
+        # Calculate total content size
+        total_content_size = sum(size for _, size in fetched_pages_info)
+
+        # Format fetched pages with size info
+        fetched_pages_str = "\n".join([f"- {url} ({size:,} bytes)" for url, size in fetched_pages_info])
+
+        logger.info(
+            f"Crawling completed. Total pages: {total_pages}, "
+            f"Skipped: {skipped_pages}, "
+            f"Total content size: {total_content_size:,} bytes\n"
+            f"{fetched_pages_str}"
+        )

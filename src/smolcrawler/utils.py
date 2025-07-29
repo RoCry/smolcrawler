@@ -64,7 +64,6 @@ def is_valid_url(
         if parsed.scheme not in ("http", "https"):
             logger.debug(f"Skipping URL with invalid scheme: {url}")
             return False
-        
 
         # Check prefix if specified
         if url_prefix and not url.startswith(url_prefix):
